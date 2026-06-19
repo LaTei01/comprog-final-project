@@ -314,12 +314,57 @@ void addProduct(Products** PRODUCTS_LIST){
 
 
 void updateProduct(Products** PRODUCTS_LIST) {
+    if (*PRODUCTS_LIST == nullptr) {            // Check if there are no products in the list
+        cout << "No products to update." << endl;
+        return;
+    }
 
+    int targetId;
+    cout << "Enter Product ID to update: ";
+    cin >> targetId;
+
+    Products* current = *PRODUCTS_LIST;
+    do {
+        if (current->itemIndex == targetId) {   // Product to be updated is found
+            string newName, newBrand, newType;
+
+            // Asks for the fields to be updated and reassign
+            cin.ignore();
+            cout << "Current Name  [" << current->itemName  << "]: ";
+            getline(cin, newName);
+            if (!newName.empty()) current->itemName = newName;
+
+            cout << "Current Brand [" << current->itemBrand << "]: ";
+            getline(cin, newBrand);
+            if (!newBrand.empty()) current->itemBrand = newBrand;
+
+            cout << "Current Type  [" << current->itemType  << "]: ";
+            getline(cin, newType);
+            if (!newType.empty()) current->itemType = newType;
+
+            cout << "Current Price [" << current->itemPrice << "]: ";
+            string priceInput;
+            getline(cin, priceInput);
+            if (!priceInput.empty()) current->itemPrice = stof(priceInput);
+
+            cout << "Current Stock [" << current->itemStock << "]: ";
+            string stockInput;
+            getline(cin, stockInput);
+            if (!stockInput.empty()) current->itemStock = stoi(stockInput);
+
+            // saveData(*PRODUCTS_LIST);   // uncomment when saveData is completed
+            cout << "Product updated successfully." << endl;
+            return;
+        }
+        current = current->nextItem;
+    } while (current != *PRODUCTS_LIST);
+
+    cout << "Product ID not found." << endl;
 }
 
 void deleteProduct(Products** PRODUCTS_LIST) {
 
-    if (*PRODUCTS_LIST == nullptr) {    // Check if there are products in the list
+    if (*PRODUCTS_LIST == nullptr) {    // Check if there are no products in the list
         cout << "There are no products yet." << endl;
         return;
     }
