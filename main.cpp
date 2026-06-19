@@ -635,7 +635,60 @@ void addToCart(Products** PRODUCTS_LIST, Orders** ORDERS_LIST) {
 }
 
 void viewAndCheckout(Products** PRODUCTS_LIST, Orders** ORDERS_LIST) {
+    if (*ORDERS_LIST == nullptr) {      // Check if the order list empty
+        cout << "Cart is empty." << endl;
+        return;
+    }
 
+    float grandTotal = 0;
+    string customerName;
+
+    cout << "\n########## Cart Summary ##########" << endl;
+    Orders* current = *ORDERS_LIST;
+    do {
+        // Prints: itemName x orderAmount - P(totalPrice)
+        cout << current->itemName << " x" << current->orderAmount << " — P" << current->totalPrice << endl;
+        grandTotal += current->totalPrice; // Add totalPrices per item to the grandTotal
+        customerName = current->customerName;
+        current = current->nextOrder;
+    } while (current != *ORDERS_LIST);
+
+    cout << "Grand Total: P" << grandTotal << endl;
+    cout << "Confirm purchase? (Y/N): ";
+    char confirm;
+    cin >> confirm;
+
+    if (confirm != 'Y' && confirm != 'y') {     // Cancels checkout
+        cout << "Checkout cancelled." << endl;
+        return;
+    }
+
+    // deduct stock
+    current = *ORDERS_LIST;
+    do {                                        // Substracts ordered amount if everything goes thru
+        Products* prod = *PRODUCTS_LIST;
+        do {
+            if (prod->itemName == current->itemName) {
+                prod->itemStock -= current->orderAmount;
+                break;
+            }
+            prod = prod->nextItem;
+        } while (prod != *PRODUCTS_LIST);       // Iterates through the PRODUCTS_LIST to reduce itemStock
+        current = current->nextOrder;
+    } while (current != *ORDERS_LIST);          // Iterates through the ORDERS_LIST to determine orderAmount to subtract
+
+    saveReceipt(*ORDERS_LIST, customerName, grandTotal);
+    saveData(*PRODUCTS_LIST);               
+
+    Orders* toDelete = *ORDERS_LIST;           
+    do {
+        Orders* next = toDelete->nextOrder;
+        delete toDelete;
+        toDelete = next;
+    } while (toDelete != *ORDERS_LIST);         // Iterates through the ORDERS_LIST and frees the dynamic memory
+    *ORDERS_LIST = nullptr;                    
+
+    cout << "Order complete. Receipt saved to receipt.txt" << endl;
 }
 
 void displayOrderDetails(Orders* ORDERS_LIST) {
