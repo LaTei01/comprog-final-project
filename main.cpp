@@ -104,8 +104,7 @@ int MainMenu(){
     return choice;
 }  
 
-
-
+// ########## INVENTORY MANAGEMENT ##########
 
 int ManageInventory(Products** PRODUCTS_LIST){
     int inventoryChoice;
@@ -491,6 +490,21 @@ int ManageOrders(Products** PRODUCTS_LIST, Orders** ORDERS_LIST) {
 }
 
 void showCustomerOrders(Orders* ORDERS_LIST) {
+    if (ORDERS_LIST == nullptr) {       // Check if there are no orders in the list
+        cout << "No orders yet." << endl;
+        return;
+    }
+
+    Orders* current = ORDERS_LIST;
+    do {
+        cout << "--------------------------------------------------" << endl;
+        cout << "Customer: " << current->customerName << endl;
+        cout << "Item: "     << current->itemName     << endl;
+        cout << "Qty: "      << current->orderAmount  << endl;
+        cout << "Total: P"   << current->totalPrice   << endl;
+        current = current->nextOrder;
+    } while (current != ORDERS_LIST);
+    cout << "--------------------------------------------------" << endl;
 }
 
 void validateStockAvailability(Products* PRODUCTS_LIST) {
