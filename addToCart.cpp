@@ -3,10 +3,7 @@
 #include <string>
 #include <algorithm>
 
-
-
 using namespace std;
-
 
 struct Products{
     int itemIndex;
@@ -21,7 +18,6 @@ struct Products{
 
 };
 
-
 struct Orders{
     string customerName;
     string itemName;
@@ -30,7 +26,6 @@ struct Orders{
     Orders *nextOrder;
     Orders *prevOrder;
 };
-
 
 int MainMenu();
 
@@ -508,7 +503,24 @@ void showCustomerOrders(Orders* ORDERS_LIST) {
 }
 
 void validateStockAvailability(Products* PRODUCTS_LIST) {
-
+    if (PRODUCTS_LIST == nullptr) {    // Check if there are no products in the list
+        cout << "No products available." << endl;
+        return;
+    }
+    int targetID;
+    cout << "Enter Product ID to check available stock: ";
+    cin >> targetID;
+    
+    Products* current = PRODUCTS_LIST;
+    do {
+        if (current->itemIndex == targetID) {   // The searched itemIndex is found
+            cout << "Product: " << current->itemName << endl;
+            cout << "Available Stock: " << current->itemStock << endl;
+            return;
+        }
+        current = current->nextItem;
+    } while (current != PRODUCTS_LIST);
+    cout << "Product ID not found." << endl;
 }
 
 void addToCart(Products** PRODUCTS_LIST, Orders** ORDERS_LIST) {
@@ -571,7 +583,16 @@ void viewAndCheckout(Products** PRODUCTS_LIST, Orders** ORDERS_LIST) {
 }
 
 void displayOrderDetails(Orders* ORDERS_LIST) {
+    Orders* current = ORDERS_LIST;
+    if (current = nullptr){
+        cout << "There are no orders at the moment.\n";
+    }
+    while (current != nullptr){
+        cout << "Product: " << current->itemName << endl;
+        cout << "Order Quantity: " << endl;//insert qty variable 
+        cout << "Total Payment: " << totalPrice <<  endl;
 
+    }
 }
 
 // ########## FILE I/O ##########
