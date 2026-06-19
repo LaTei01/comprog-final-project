@@ -7,19 +7,22 @@
 
 using namespace std;
 
-struct Products{ //structure for managing products
+
+struct Products{
     int itemIndex;
     string itemName;
     string itemBrand; // added
     string itemType; // added
     float itemPrice;
-    int itemStock;
+    int itemStock; // corrected
+
     Products* nextItem;
     Products* prevItem;
 
 };
 
-struct Orders{ //structure for managing orders
+
+struct Orders{
     string customerName;
     string itemName;
     int orderAmount;
@@ -28,12 +31,14 @@ struct Orders{ //structure for managing orders
     Orders *prevOrder;
 };
 
-//function declarations 
-int mainMenu();
 
-int manageInventory(Products** PRODUCTS_LIST);
-void searchProduct(Products** PRODUCTS_LIST); 
-void addProduct(Products** PRODUCTS_LIST);  
+int MainMenu();
+
+// ########## INVENTORY MANAGEMENT FUNCTION DECLARATION ##########
+
+int ManageInventory(Products** PRODUCTS_LIST);
+void searchProduct(Products** PRODUCTS_LIST);
+void addProduct(Products** PRODUCTS_LIST);
 void updateProduct(Products** PRODUCTS_LIST);
 void deleteProduct(Products** PRODUCTS_LIST);
 void displayProductsDetails(Products* PRODUCTS_LIST);
@@ -42,32 +47,42 @@ void checkLowStock(Products* PRODUCTS_LIST);
 
 // ########## ORDERS MANAGEMENT FUNCTIONS DECLARATION ##########
 
-int manageOrders(Products** PRODUCTS_LIST, Orders** ORDERS_LIST);
+int ManageOrders(Products** PRODUCTS_LIST, Orders** ORDERS_LIST);
 void showCustomerOrders(Orders* ORDERS_LIST);
-void validateStockAvailability(Products* PRODUCTS_LIST, Orders* ORDERS_LIST);
-void acceptAndProcessOrders(Products* PRODUCTS_LIST, Orders* ORDERS_LIST); //includes auto deduct and save receipt
+void validateStockAvailability(Products* PRODUCTS_LIST);
+void addToCart(Products** PRODUCTS_LIST, Orders** ORDERS_LIST);
+void viewAndCheckout(Products** PRODUCTS_LIST, Orders** ORDERS_LIST);
 void displayOrderDetails(Orders* ORDERS_LIST);
 
-int main(){ //main function
+// ########## FILE INPUT AND OUTPUT FUNCTIONS DECLARATION ##########
+
+void loadData(Products** PRODUCTS_LIST);
+void saveData(Products* PRODUCTS_LIST);
+void saveReceipt(Orders* ORDERS_LIST, string customerName, float total);
+
+// ########## MAIN FUNCTION ##########
+
+int main(){
     Products* PRODUCTS_LIST = nullptr;
     Orders* ORDERS_LIST = nullptr;
     int choice;
 
-    choice = mainMenu();
+    // loadData(&PRODUCTS_LIST);
 
-    while(choice != 3){
-    switch(choice){
-        case 1:
-            manageInventory(&PRODUCTS_LIST);
-            break;
-        case 2:
-            manageOrders(&PRODUCTS_LIST, &ORDERS_LIST);
-            break;
-        case 3:
-            cout << "Exiting the program. Goodbye!" << endl;
-            break;
-        default:
-            cout << "Invalid choice. Please try again." << endl;
+    choice = MainMenu();
+
+    while (choice != 3) {
+        switch (choice) {
+            case 1:
+                ManageInventory(&PRODUCTS_LIST);
+                break;
+            case 2:
+                ManageOrders(&PRODUCTS_LIST, &ORDERS_LIST);
+                break;
+            default:
+                cout << "Invalid choice. Please try again." << endl;
+        }
+        choice = MainMenu();
     }
 
     // saveData(PRODUCTS_LIST);
@@ -75,33 +90,23 @@ int main(){ //main function
     return 0;
 }
 
-int mainMenu(){ //main menu function
+
+int MainMenu(){
     int choice;
-    cout << "Welcome to the Inventory Management System!\n";
-    cout << "1. Manage Inventory\n";
-    cout << "2. Manage Orders\n";
-    cout << "3. Exit\n";
-    cout << "Enter your choice: \n";
+
+    cout << "Welcome to the Beauteq Inventory Management System!" << endl;
+    cout << "1. Manage Inventory" << endl;
+    cout << "2. Manage Orders" << endl;
+    cout << "3. Exit" << endl;
+    cout << "Enter your choice: ";
+
     cin >> choice;
-    switch (choice){
-        case 1:
-        cout << "Managing inventory...\n";
-        break;
-        case 2:
-        cout << "Managing orders...\n";
-        break;
-        case 3:
-        cout << "Exiting the program. Have a good day!\n";
-        break;
-        default:
-        cout << "Invalid choice. Please try again.\n";
-    }
     return choice;
 }  
 
 // ########## INVENTORY MANAGEMENT ##########
 
-int manageInventory(Products** PRODUCTS_LIST){ //inventory management function
+int ManageInventory(Products** PRODUCTS_LIST){
     int inventoryChoice;
 
     cout << "\n########## Inventory Management ##########" << endl;
@@ -123,11 +128,19 @@ int manageInventory(Products** PRODUCTS_LIST){ //inventory management function
             addProduct(PRODUCTS_LIST);
             break;
         case 3:
-        deleteProduct(PRODUCTS_LIST);
-        break;
+            updateProduct(PRODUCTS_LIST);
+            break;
         case 4:
-        displayProductsDetails(*PRODUCTS_LIST);
-        break;
+            deleteProduct(PRODUCTS_LIST);
+            break;
+        case 5:
+            displayProductsDetails(*PRODUCTS_LIST);
+            break;
+        case 6:
+            displayInventory(*PRODUCTS_LIST);
+            break;
+        case 7:
+            return 0;
         default:
             cout << "Invalid choice. Please try again." << endl;
     }
@@ -136,10 +149,27 @@ int manageInventory(Products** PRODUCTS_LIST){ //inventory management function
     return 0;
 };
 
-void searchProduct(Products** PRODUCTS_LIST){ //search product function
-    string searchName;
-    cout << "Enter the product name to search: ";
-    cin >> searchName;
+
+void searchProduct(Products** PRODUCTS_LIST){
+    if (*PRODUCTS_LIST == nullptr) {    // Check if the products list is empty
+        cout << "No products found." << endl;
+        return;
+    }
+
+    string searchKeyword;
+    cout << "Search: ";
+    cin.ignore();                       // Clear any leftover newline character from previous input operations
+    getline(cin, searchKeyword);        // Read the entire search query, including spaces
+
+    
+    string lowerKeyword = searchKeyword;    
+    // Create a lowercase copy of the search keyword
+    transform(lowerKeyword.begin(), lowerKeyword.end(), lowerKeyword.begin(), ::tolower);
+
+    cout << "\nResults for [" << searchKeyword << "]:" << endl; 
+    cout << "--------------------------------------------------" << endl;
+
+    bool found = false;    // Flag to track whether at least one matching product is found
     Products* current = *PRODUCTS_LIST;
 
     // Traverse the entire products linked list
@@ -178,8 +208,8 @@ void searchProduct(Products** PRODUCTS_LIST){ //search product function
     cout << "--------------------------------------------------" << endl;
 }
 
-void addProduct(Products** PRODUCTS_LIST){ //add product function
-    Products* newProduct = new Products();
+
+void addProduct(Products** PRODUCTS_LIST){
     string itemName;
 
     cout << "Enter Product Name: ";
@@ -228,42 +258,70 @@ void addProduct(Products** PRODUCTS_LIST){ //add product function
     string itemBrand, itemType;
     float itemPrice;
     int itemStock;
-    Products* current = *PRODUCTS_LIST; //to assign index to new product
-    
-    cout<< "Enter Product Name: \n";
-    cin >> itemName;
-    cout << "Enter Product Price: \n";
+
+    cout << "Enter Brand: ";
+    cin.ignore();
+    getline(cin, itemBrand);
+
+    cout << "Enter Type (Lip Product / Eye Product / Skin Product / Others): ";
+    getline(cin, itemType);
+
+    cout << "Enter Price: ";
     cin >> itemPrice;
-    cout << "Enter Product Stock: \n";
+
+    cout << "Enter Stock Quantity: ";
     cin >> itemStock;
 
+    Products* newProduct = new Products(); // Create new node pointer
 
-    newProduct->itemName = itemName;
+    // Assign entered values to the new node
+    newProduct->itemName  = itemName;
+    newProduct->itemBrand = itemBrand;
+    newProduct->itemType  = itemType;
     newProduct->itemPrice = itemPrice;
     newProduct->itemStock = itemStock;
-    newProduct->nextItem = nullptr;
-    newProduct->prevItem = nullptr;
-    
-    if (*PRODUCTS_LIST == nullptr){
+
+    // Initialize linked list pointers
+    newProduct->nextItem  = nullptr;
+    newProduct->prevItem  = nullptr;
+
+    // Assign an automatic product index and insert into the circular doubly linked list
+    if (*PRODUCTS_LIST == nullptr) { // Products list is empty
+
+        // Assign index 1 and point next/prev to itself
         newProduct->itemIndex = 1;
-        *PRODUCTS_LIST = newProduct;
-    }else{
-        int count=1;
-        Products* current = *PRODUCTS_LIST;
-        while (current->nextItem != nullptr){
-            current = current->nextItem;
-            count++;
-        }
-        newProduct->itemIndex = count + 1;
-        current->nextItem = newProduct;
-        newProduct->prevItem = current;
+        newProduct->nextItem  = newProduct;
+        newProduct->prevItem  = newProduct;
+
+        *PRODUCTS_LIST = newProduct;         // Make the new node the head of the list
+
+
+    } else {    // Products list have content
+        Products* tail = (*PRODUCTS_LIST)->prevItem;    // Get the current tail node
+        newProduct->itemIndex = tail->itemIndex + 1;    // Assign the next available index.
+
+        // Insert the new node after the tail
+        tail->nextItem              = newProduct;
+        newProduct->prevItem        = tail;
+        newProduct->nextItem        = *PRODUCTS_LIST;
+        (*PRODUCTS_LIST)->prevItem  = newProduct;
     }
+
+    // saveData(*PRODUCTS_LIST); // uncomment later once saveData is complete
+    cout << "Product added successfully." << endl;
 }
 
-void updateProduct(Products** PRODUCTS_LIST){ //update product function
-    string searchName;
-    cout << "Enter product name: \n";
-    cin >> searchName;
+
+void updateProduct(Products** PRODUCTS_LIST) {
+    if (*PRODUCTS_LIST == nullptr) {            // Check if there are no products in the list
+        cout << "No products to update." << endl;
+        return;
+    }
+
+    int targetId;
+    cout << "Enter Product ID to update: ";
+    cin >> targetId;
+
     Products* current = *PRODUCTS_LIST;
     do {
         if (current->itemIndex == targetId) {   // Product to be updated is found
@@ -300,7 +358,10 @@ void updateProduct(Products** PRODUCTS_LIST){ //update product function
         current = current->nextItem;
     } while (current != *PRODUCTS_LIST);
 
-void deleteProduct(Products** PRODUCTS_LIST){ //delete product function
+    cout << "Product ID not found." << endl;
+}
+
+void deleteProduct(Products** PRODUCTS_LIST) {
 
     if (*PRODUCTS_LIST == nullptr) {    // Check if there are no products in the list
         cout << "There are no products yet." << endl;
@@ -351,24 +412,45 @@ void displayProductsDetails(Products* PRODUCTS_LIST) {
         return;
     }
 
-void displayProductsDetails(Products* PRODUCTS_LIST){
+    cout << "\n########## All Products ##########" << endl;
+    cout << "ID | Name | Brand | Type | Price | Stock" << endl;
+    cout << "--------------------------------------------------" << endl;
+
     Products* current = PRODUCTS_LIST;
-    while (current != nullptr){
-        cout << "Index: " << current->itemIndex << endl;
-        cout << "Product Name: " << current->itemName << endl;
-        cout << "Product Price: "<< current->itemPrice << endl;
-        cout << "Product Stock: " << current->itemStock << endl;
-        cout << "-----------------------------" << endl;
+    do {
+        cout << current->itemIndex << " | "
+             << current->itemName  << " | "
+             << current->itemBrand << " | "
+             << current->itemType  << " | P"
+             << current->itemPrice << " | "
+             << current->itemStock << endl;
         current = current->nextItem;
-    }
-    return;
-}
-void displayInventory(Products* PRODUCTS_LIST){
-    return;
+    } while (current != PRODUCTS_LIST);
+    cout << "--------------------------------------------------" << endl;
+
 }
 
-//functions for order management
-int manageOrders(Products** PRODUCTS_LIST, Orders** ORDERS_LIST){ //order management function
+void displayInventory(Products* PRODUCTS_LIST) {
+    if (PRODUCTS_LIST == nullptr) {         // Checks if there are no products in the list
+        cout << "No products to display." << endl;
+        return;
+    }
+
+    cout << "\n########## In-Store Inventory by Type ##########" << endl;
+
+    string types[] = {"Lip Product", "Eye Product", "Skin Product", "Others"}; // List of the types of products
+    for (const string& type : types) {  // Iterates per type in the list
+        cout << "\n" << type << ":" << endl;
+        Products* current = PRODUCTS_LIST;
+        do {
+            if (current->itemType == type)
+                cout << "  " << current->itemName << " — Stock: " << current->itemStock << endl;
+            current = current->nextItem;
+        } while (current != PRODUCTS_LIST);
+    }
+}
+
+int ManageOrders(Products** PRODUCTS_LIST, Orders** ORDERS_LIST) {
     int orderChoice;
 
     cout << "\n########## Order Management ##########" << endl;
@@ -413,7 +495,6 @@ void showCustomerOrders(Orders* ORDERS_LIST) {
         return;
     }
 
-void showCustomerOrders(Orders* ORDERS_LIST){ //show customer orders function
     Orders* current = ORDERS_LIST;
     do {
         cout << "--------------------------------------------------" << endl;
@@ -435,14 +516,76 @@ void addToCart(Products** PRODUCTS_LIST, Orders** ORDERS_LIST) {
         cout << "No products available." << endl;
         return;
     }
+
+    int targetId, qty;
+    string customerName;
+
+    cout << "Enter Customer Name: ";
+    cin.ignore();
+    getline(cin, customerName);
+    cout << "Enter Product ID: ";
+    cin >> targetId;
+    cout << "Enter Quantity: ";
+    cin >> qty;
+
+    Products* current = *PRODUCTS_LIST;
+    do {
+        if (current->itemIndex == targetId) {   // The searched itemIndex is found
+            if (qty > current->itemStock) {
+                cout << "Insufficient stock. Available: " << current->itemStock << endl;
+                return;
+            }
+
+            Orders* newOrder = new Orders();    // Creates new node pointer instance
+            newOrder->customerName = customerName;
+            newOrder->itemName     = current->itemName;
+            newOrder->orderAmount  = qty;
+            newOrder->totalPrice   = current->itemPrice * qty;
+            newOrder->nextOrder    = nullptr;
+            newOrder->prevOrder    = nullptr;
+
+            if (*ORDERS_LIST == nullptr) {      // There are no orders in the list yet
+                newOrder->nextOrder = newOrder;
+                newOrder->prevOrder = newOrder;
+                *ORDERS_LIST = newOrder;        // Makes the new order the head of the order list
+
+            } else {                            // There are existing orders
+                Orders* tail = (*ORDERS_LIST)->prevOrder;
+                tail->nextOrder             = newOrder;
+                newOrder->prevOrder         = tail;
+                newOrder->nextOrder         = *ORDERS_LIST;
+                (*ORDERS_LIST)->prevOrder   = newOrder;     // Appends the order at the last
+            }
+
+            cout << "Added to cart: " << current->itemName << " x" << qty << " — P" << newOrder->totalPrice << endl;
+            return;
+        }
+        current = current->nextItem;
+    } while (current != *PRODUCTS_LIST);
+
+    cout << "Product ID not found." << endl;
 }
 
-void validateStockAvailability(Products* PRODUCTS_LIST, Orders* ORDERS_LIST){
-    return;
+void viewAndCheckout(Products** PRODUCTS_LIST, Orders** ORDERS_LIST) {
+
 }
-void acceptAndProcessOrders(Products* PRODUCTS_LIST, Orders* ORDERS_LIST){
-    return;
-} //includes auto deduct and save receipt
-void displayOrderDetails(Orders* ORDERS_LIST){
-    return;
+
+void displayOrderDetails(Orders* ORDERS_LIST) {
+
 }
+
+// ########## FILE I/O ##########
+
+void loadData(Products** PRODUCTS_LIST) {
+
+}
+
+void saveData(Products* PRODUCTS_LIST) {
+
+}
+
+void saveReceipt(Orders* ORDERS_LIST, string customerName, float total) {
+}
+
+
+
