@@ -512,7 +512,58 @@ void validateStockAvailability(Products* PRODUCTS_LIST) {
 }
 
 void addToCart(Products** PRODUCTS_LIST, Orders** ORDERS_LIST) {
+    if (*PRODUCTS_LIST == nullptr) {    // Check if there are no procucts in the list
+        cout << "No products available." << endl;
+        return;
+    }
 
+    int targetId, qty;
+    string customerName;
+
+    cout << "Enter Customer Name: ";
+    cin.ignore();
+    getline(cin, customerName);
+    cout << "Enter Product ID: ";
+    cin >> targetId;
+    cout << "Enter Quantity: ";
+    cin >> qty;
+
+    Products* current = *PRODUCTS_LIST;
+    do {
+        if (current->itemIndex == targetId) {   // The searched itemIndex is found
+            if (qty > current->itemStock) {
+                cout << "Insufficient stock. Available: " << current->itemStock << endl;
+                return;
+            }
+
+            Orders* newOrder = new Orders();    // Creates new node pointer instance
+            newOrder->customerName = customerName;
+            newOrder->itemName     = current->itemName;
+            newOrder->orderAmount  = qty;
+            newOrder->totalPrice   = current->itemPrice * qty;
+            newOrder->nextOrder    = nullptr;
+            newOrder->prevOrder    = nullptr;
+
+            if (*ORDERS_LIST == nullptr) {      // There are no orders in the list yet
+                newOrder->nextOrder = newOrder;
+                newOrder->prevOrder = newOrder;
+                *ORDERS_LIST = newOrder;        // Makes the new order the head of the order list
+
+            } else {                            // There are existing orders
+                Orders* tail = (*ORDERS_LIST)->prevOrder;
+                tail->nextOrder             = newOrder;
+                newOrder->prevOrder         = tail;
+                newOrder->nextOrder         = *ORDERS_LIST;
+                (*ORDERS_LIST)->prevOrder   = newOrder;     // Appends the order at the last
+            }
+
+            cout << "Added to cart: " << current->itemName << " x" << qty << " — P" << newOrder->totalPrice << endl;
+            return;
+        }
+        current = current->nextItem;
+    } while (current != *PRODUCTS_LIST);
+
+    cout << "Product ID not found." << endl;
 }
 
 void viewAndCheckout(Products** PRODUCTS_LIST, Orders** ORDERS_LIST) {
