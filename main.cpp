@@ -3,10 +3,7 @@
 #include <string>
 #include <algorithm>
 
-
-
 using namespace std;
-
 
 struct Products{
     int itemIndex;
@@ -21,7 +18,6 @@ struct Products{
 
 };
 
-
 struct Orders{
     string customerName;
     string itemName;
@@ -31,11 +27,9 @@ struct Orders{
     Orders *prevOrder;
 };
 
-
 int MainMenu();
 
 // ########## INVENTORY MANAGEMENT FUNCTION DECLARATION ##########
-
 int ManageInventory(Products** PRODUCTS_LIST);
 void searchProduct(Products** PRODUCTS_LIST);
 void addProduct(Products** PRODUCTS_LIST);
@@ -46,7 +40,6 @@ void displayInventory(Products* PRODUCTS_LIST);
 void checkLowStock(Products* PRODUCTS_LIST);
 
 // ########## ORDERS MANAGEMENT FUNCTIONS DECLARATION ##########
-
 int ManageOrders(Products** PRODUCTS_LIST, Orders** ORDERS_LIST);
 void showCustomerOrders(Orders* ORDERS_LIST);
 void validateStockAvailability(Products* PRODUCTS_LIST);
@@ -55,20 +48,17 @@ void viewAndCheckout(Products** PRODUCTS_LIST, Orders** ORDERS_LIST);
 void displayOrderDetails(Orders* ORDERS_LIST);
 
 // ########## FILE INPUT AND OUTPUT FUNCTIONS DECLARATION ##########
-
 void loadData(Products** PRODUCTS_LIST);
 void saveData(Products* PRODUCTS_LIST);
 void saveReceipt(Orders* ORDERS_LIST, string customerName, float total);
 
 // ########## MAIN FUNCTION ##########
-
 int main(){
     Products* PRODUCTS_LIST = nullptr;
     Orders* ORDERS_LIST = nullptr;
     int choice;
 
     // loadData(&PRODUCTS_LIST);
-
     choice = MainMenu();
 
     while (choice != 3) {
@@ -500,7 +490,7 @@ void showCustomerOrders(Orders* ORDERS_LIST) {
         cout << "--------------------------------------------------" << endl;
         cout << "Customer: " << current->customerName << endl;
         cout << "Item: "     << current->itemName     << endl;
-        cout << "Qty: "      << current->orderAmount  << endl;
+        cout << "quantity: "      << current->orderAmount  << endl;
         cout << "Total: P"   << current->totalPrice   << endl;
         current = current->nextOrder;
     } while (current != ORDERS_LIST);
@@ -509,15 +499,39 @@ void showCustomerOrders(Orders* ORDERS_LIST) {
 
 void validateStockAvailability(Products* PRODUCTS_LIST) {
 
-}
-
-void addToCart(Products** PRODUCTS_LIST, Orders** ORDERS_LIST) {
-    if (*PRODUCTS_LIST == nullptr) {    // Check if there are no procucts in the list
+    if (PRODUCTS_LIST == nullptr) { // Check of there is no products yet in the list
         cout << "No products available." << endl;
         return;
     }
 
-    int targetId, qty;
+    int targetId, quantity;
+    cout << "Enter Product ID: ";
+    cin >> targetId;
+    cout << "Enter desired quantity: ";
+    cin >> quantity;
+
+    Products* current = PRODUCTS_LIST;
+    do {
+        if (current->itemIndex == targetId) {   
+            if (quantity <= current->itemStock) // Stock is sufficient
+                cout << "In stock. Available: " << current->itemStock << endl;
+            else                                // Stock insufficient
+                cout << "Insufficient stock. Available: " << current->itemStock << endl;
+            return;
+        }
+        current = current->nextItem;
+    } while (current != PRODUCTS_LIST);
+
+    cout << "Product ID not found." << endl;
+}
+
+void addToCart(Products** PRODUCTS_LIST, Orders** ORDERS_LIST) {
+    if (*PRODUCTS_LIST == nullptr) {
+        cout << "No products available." << endl;
+        return;
+    }
+
+    int targetId, quantity;
     string customerName;
 
     cout << "Enter Customer Name: ";
@@ -526,12 +540,66 @@ void addToCart(Products** PRODUCTS_LIST, Orders** ORDERS_LIST) {
     cout << "Enter Product ID: ";
     cin >> targetId;
     cout << "Enter Quantity: ";
-    cin >> qty;
+    cin >> quantity;
+
+    Products* current = *PRODUCTS_LIST;
+    do {
+        if (current->itemIndex == targetId) {
+            if (quantity > current->itemStock) {
+                cout << "Insufficient stock. Available: " << current->itemStock << endl;
+                return;
+            }
+
+            Orders* newOrder = new Orders();
+            newOrder->customerName = customerName;
+            newOrder->itemName     = current->itemName;
+            newOrder->orderAmount  = quantity;
+            newOrder->totalPrice   = current->itemPrice * quantity;
+            newOrder->nextOrder    = nullptr;
+            newOrder->prevOrder    = nullptr;
+
+            if (*ORDERS_LIST == nullptr) {
+                newOrder->nextOrder = newOrder;
+                newOrder->prevOrder = newOrder;
+                *ORDERS_LIST = newOrder;
+            } else {
+                Orders* tail = (*ORDERS_LIST)->prevOrder;
+                tail->nextOrder             = newOrder;
+                newOrder->prevOrder         = tail;
+                newOrder->nextOrder         = *ORDERS_LIST;
+                (*ORDERS_LIST)->prevOrder   = newOrder;
+            }
+
+            cout << "Added to cart: " << current->itemName << " x" << quantity << " — P" << newOrder->totalPrice << endl;
+            return;
+        }
+        current = current->nextItem;
+    } while (current != *PRODUCTS_LIST);
+
+    cout << "Product ID not found." << endl;
+}
+
+void addToCart(Products** PRODUCTS_LIST, Orders** ORDERS_LIST) {
+    if (*PRODUCTS_LIST == nullptr) {    // Check if there are no procucts in the list
+        cout << "No products available." << endl;
+        return;
+    }
+
+    int targetId, quantity;
+    string customerName;
+
+    cout << "Enter Customer Name: ";
+    cin.ignore();
+    getline(cin, customerName);
+    cout << "Enter Product ID: ";
+    cin >> targetId;
+    cout << "Enter Quantity: ";
+    cin >> quantity;
 
     Products* current = *PRODUCTS_LIST;
     do {
         if (current->itemIndex == targetId) {   // The searched itemIndex is found
-            if (qty > current->itemStock) {
+            if (quantity > current->itemStock) {
                 cout << "Insufficient stock. Available: " << current->itemStock << endl;
                 return;
             }
@@ -539,8 +607,8 @@ void addToCart(Products** PRODUCTS_LIST, Orders** ORDERS_LIST) {
             Orders* newOrder = new Orders();    // Creates new node pointer instance
             newOrder->customerName = customerName;
             newOrder->itemName     = current->itemName;
-            newOrder->orderAmount  = qty;
-            newOrder->totalPrice   = current->itemPrice * qty;
+            newOrder->orderAmount  = quantity;
+            newOrder->totalPrice   = current->itemPrice * quantity;
             newOrder->nextOrder    = nullptr;
             newOrder->prevOrder    = nullptr;
 
@@ -557,7 +625,7 @@ void addToCart(Products** PRODUCTS_LIST, Orders** ORDERS_LIST) {
                 (*ORDERS_LIST)->prevOrder   = newOrder;     // Appends the order at the last
             }
 
-            cout << "Added to cart: " << current->itemName << " x" << qty << " — P" << newOrder->totalPrice << endl;
+            cout << "Added to cart: " << current->itemName << " x" << quantity << " — P" << newOrder->totalPrice << endl;
             return;
         }
         current = current->nextItem;
