@@ -152,20 +152,61 @@ int ManageInventory(Products** PRODUCTS_LIST){
 
 
 void searchProduct(Products** PRODUCTS_LIST){
-    string searchName;
-    cout << "Enter the product name to search: ";
-    cin >> searchName;
-    Products* current = *PRODUCTS_LIST;
-    while (current != nullptr){
-        if (current->itemName==searchName){
-            cout << "Index: " << current->itemIndex;
-            cout << "Product Name: " << current->itemName;
-            cout << "Product Price: "<< current->itemPrice;
-            break;
-        }else{
-            current = current->nextItem;
-        }
+    if (*PRODUCTS_LIST == nullptr) {    // Check if the products list is empty
+        cout << "No products found." << endl;
+        return;
     }
+
+    string searchKeyword;
+    cout << "Search: ";
+    cin.ignore();                       // Clear any leftover newline character from previous input operations
+    getline(cin, searchKeyword);        // Read the entire search query, including spaces
+
+    
+    string lowerKeyword = searchKeyword;    
+    // Create a lowercase copy of the search keyword
+    transform(lowerKeyword.begin(), lowerKeyword.end(), lowerKeyword.begin(), ::tolower);
+
+    cout << "\nResults for [" << searchKeyword << "]:" << endl; 
+    cout << "--------------------------------------------------" << endl;
+
+    bool found = false;    // Flag to track whether at least one matching product is found
+    Products* current = *PRODUCTS_LIST;
+
+    // Traverse the entire products linked list
+    do {
+        // Create temporary copies of searchable fields
+        string tempName  = current->itemName;
+        string tempBrand = current->itemBrand;
+        string tempType  = current->itemType;
+
+        // Convert all searchable fields to lowercase for case-insensitive comparison.
+        transform(tempName.begin(),  tempName.end(),  tempName.begin(),  ::tolower);
+        transform(tempBrand.begin(), tempBrand.end(), tempBrand.begin(), ::tolower);
+        transform(tempType.begin(),  tempType.end(),  tempType.begin(),  ::tolower);
+
+        // Check if the search keyword exists in the product name, brand, or type using substring matching
+        if (tempName.find(lowerKeyword)  != string::npos ||
+            tempBrand.find(lowerKeyword) != string::npos ||
+            tempType.find(lowerKeyword)  != string::npos) {
+
+            // Display matching product information
+            cout << "ID: "    << current->itemIndex
+                 << " | "     << current->itemName
+                 << " ("      << current->itemBrand << ")"
+                 << " | P"    << current->itemPrice
+                 << " | Stock: " << current->itemStock << endl;
+
+            // Mark that at least one product has been found
+            found = true;
+        }
+        current = current->nextItem;
+    } while (current != *PRODUCTS_LIST);
+
+    // If no matches were found, display a message
+    if (!found)
+        cout << "Product not found." << endl;
+    cout << "--------------------------------------------------" << endl;
 }
 
 
