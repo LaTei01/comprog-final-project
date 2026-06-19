@@ -314,9 +314,52 @@ void addProduct(Products** PRODUCTS_LIST){
 
 
 void updateProduct(Products** PRODUCTS_LIST) {
+
 }
 
 void deleteProduct(Products** PRODUCTS_LIST) {
+
+    if (*PRODUCTS_LIST == nullptr) {    // Check if there are products in the list
+        cout << "There are no products yet." << endl;
+        return;
+    }
+
+    int targetId;
+    cout << "Enter Product ID to delete: ";
+    cin >> targetId;
+
+    Products* current = *PRODUCTS_LIST;
+    do {
+        if (current->itemIndex == targetId) {       // Searched product found
+            cout << "Delete \"" << current->itemName << "\"? (Y/N): ";
+            char confirm;
+            cin >> confirm;
+
+            if (confirm != 'Y' && confirm != 'y') { // Deletion cancelled
+                cout << "Deletion cancelled." << endl;
+                return;
+            }
+
+            if (current->nextItem == current) {     // Only one node in the list
+                *PRODUCTS_LIST = nullptr;           // Deleted only node
+            } else {
+                // Link the prev of current to next and vice versa
+                current->prevItem->nextItem = current->nextItem;
+                current->nextItem->prevItem = current->prevItem;
+                if (current == *PRODUCTS_LIST)
+                    *PRODUCTS_LIST = current->nextItem;
+            }
+
+            delete current;             // free to be deleted node
+            // saveData(*PRODUCTS_LIST);   //  uncomment once saveData is complete
+            cout << "Product deleted successfully." << endl;
+            return;
+        }
+        current = current->nextItem;
+    } while (current != *PRODUCTS_LIST);
+
+    cout << "Product ID not found." << endl;
+
 }
 
 void displayProductsDetails(Products* PRODUCTS_LIST) {
