@@ -408,11 +408,47 @@ void deleteProduct(Products** PRODUCTS_LIST) {
 }
 
 void displayProductsDetails(Products* PRODUCTS_LIST) {
+    if (PRODUCTS_LIST == nullptr) {         // Checks if there are no products in the list
+        cout << "No products to display." << endl;
+        return;
+    }
+
+    cout << "\n########## All Products ##########" << endl;
+    cout << "ID | Name | Brand | Type | Price | Stock" << endl;
+    cout << "--------------------------------------------------" << endl;
+
+    Products* current = PRODUCTS_LIST;
+    do {
+        cout << current->itemIndex << " | "
+             << current->itemName  << " | "
+             << current->itemBrand << " | "
+             << current->itemType  << " | P"
+             << current->itemPrice << " | "
+             << current->itemStock << endl;
+        current = current->nextItem;
+    } while (current != PRODUCTS_LIST);
+    cout << "--------------------------------------------------" << endl;
 
 }
 
 void displayInventory(Products* PRODUCTS_LIST) {
+    if (PRODUCTS_LIST == nullptr) {         // Checks if there are no products in the list
+        cout << "No products to display." << endl;
+        return;
+    }
 
+    cout << "\n########## In-Store Inventory by Type ##########" << endl;
+
+    string types[] = {"Lip Product", "Eye Product", "Skin Product", "Others"}; // List of the types of products
+    for (const string& type : types) {  // Iterates per type in the list
+        cout << "\n" << type << ":" << endl;
+        Products* current = PRODUCTS_LIST;
+        do {
+            if (current->itemType == type)
+                cout << "  " << current->itemName << " — Stock: " << current->itemStock << endl;
+            current = current->nextItem;
+        } while (current != PRODUCTS_LIST);
+    }
 }
 
 int ManageOrders(Products** PRODUCTS_LIST, Orders** ORDERS_LIST) {
