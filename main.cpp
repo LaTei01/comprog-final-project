@@ -211,21 +211,105 @@ void searchProduct(Products** PRODUCTS_LIST){
 
 
 void addProduct(Products** PRODUCTS_LIST){
-    Products newProduct;
-
-
     string itemName;
+
+    cout << "Enter Product Name: ";
+    cin.ignore();
+    getline(cin, itemName);    // Read the full product name, including spaces
+
+    if (*PRODUCTS_LIST != nullptr) {     // Check for duplicate product names if the list is not empty
+
+
+        Products* current = *PRODUCTS_LIST;
+
+        do {
+            // Creates temporary copies for case-insensitive comparison
+            string tempName = current->itemName;
+            string tempInput = itemName;
+
+            // Converts both strings to lowercase
+            transform(tempName.begin(),  tempName.end(),  tempName.begin(),  ::tolower);
+            transform(tempInput.begin(), tempInput.end(), tempInput.begin(), ::tolower);
+
+            if (tempName == tempInput) {// Duplicate found
+
+                // Display warning and show available actions
+                cout << "WARNING: \"" << itemName << "\" already exists." << endl;
+                cout << "1. Enter a different name" << endl;
+                cout << "2. Go to Update Product instead" << endl;
+                cout << "Enter your choice: ";
+
+                int dupChoice;
+                cin >> dupChoice;
+
+                if (dupChoice == 2) {           // Redirect user to update the existing product
+                    updateProduct(PRODUCTS_LIST);
+                    return;
+                } else {
+                    addProduct(PRODUCTS_LIST);  // Restart the add product process 
+                    return;
+                }
+            }
+
+            current = current->nextItem;
+
+        } while (current != *PRODUCTS_LIST);
+    }
+
+    string itemBrand, itemType;
     float itemPrice;
-    cout<< "Enter Product Name: \n";
-    cin >> itemName;
-    cout<< "Enter Product Price: \n";
+    int itemStock;
+
+    cout << "Enter Brand: ";
+    cin.ignore();
+    getline(cin, itemBrand);
+
+    cout << "Enter Type (Lip Product / Eye Product / Skin Product / Others): ";
+    getline(cin, itemType);
+
+    cout << "Enter Price: ";
     cin >> itemPrice;
 
+    cout << "Enter Stock Quantity: ";
+    cin >> itemStock;
 
-    newProduct.itemName = itemName;
-    newProduct.itemPrice = itemPrice;
-    newProduct.nextItem = nullptr;
-    newProduct.prevItem = nullptr;
+    Products* newProduct = new Products(); // Create new node pointer
+
+    // Assign entered values to the new node
+    newProduct->itemName  = itemName;
+    newProduct->itemBrand = itemBrand;
+    newProduct->itemType  = itemType;
+    newProduct->itemPrice = itemPrice;
+    newProduct->itemStock = itemStock;
+
+    // Initialize linked list pointers
+    newProduct->nextItem  = nullptr;
+    newProduct->prevItem  = nullptr;
+
+    // Assign an automatic product index and insert into the circular doubly linked list
+    if (*PRODUCTS_LIST == nullptr) { // Products list is empty
+
+        // Assign index 1 and point next/prev to itself
+        newProduct->itemIndex = 1;
+        newProduct->nextItem  = newProduct;
+        newProduct->prevItem  = newProduct;
+
+        *PRODUCTS_LIST = newProduct;         // Make the new node the head of the list
+
+
+    } else {    // Products list have content
+        Products* tail = (*PRODUCTS_LIST)->prevItem;    // Get the current tail node
+        newProduct->itemIndex = tail->itemIndex + 1;    // Assign the next available index.
+
+        // Insert the new node after the tail
+        tail->nextItem              = newProduct;
+        newProduct->prevItem        = tail;
+        newProduct->nextItem        = *PRODUCTS_LIST;
+        (*PRODUCTS_LIST)->prevItem  = newProduct;
+    }
+
+    // saveData(*PRODUCTS_LIST); // uncomment later once saveData is complete
+    cout << "Product added successfully." << endl;
 }
 
 
