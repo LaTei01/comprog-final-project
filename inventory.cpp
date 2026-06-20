@@ -94,7 +94,11 @@ void searchProduct(Products** PRODUCTS_LIST){
                  << " | "        << current->itemName
                  << " ("         << current->itemBrand << ")"
                  << " | P"       << current->itemPrice
-                 << " | Stock: " << current->itemStock << endl;
+                 << " | Stock: " << current->itemStock;
+
+            if (current->itemStock == 0)        // Flag out-of-stock items inline so users don't try to order them
+                cout << " (OUT OF STOCK)";
+            cout << endl;
 
             // Mark that at least one product has been found
             found = true;
@@ -168,7 +172,6 @@ void addProduct(Products** PRODUCTS_LIST){
     int    itemStock;
 
     cout << "Enter Brand: ";
-    cin.ignore();
     getline(cin, itemBrand);
     if (itemBrand.empty()) {            // Reject empty brand
         cout << "Brand cannot be empty." << endl;
@@ -182,18 +185,40 @@ void addProduct(Products** PRODUCTS_LIST){
         return;
     }
 
+    // Decimal-safe price parsing: read the whole line and run it through stof/catch
+    // instead of `cin >> itemPrice`, which would silently accept "12.5abc" by parsing
+    // just the numeric prefix and leaving "abc" sitting in the stream for the next read.
     cout << "Enter Price: ";
-    if (!(cin >> itemPrice) || itemPrice < 0) {     // Reject non-numeric or negative price
-        cin.clear();
-        cin.ignore(1000, '\n');
+    string priceInput;
+    getline(cin, priceInput);
+    try {
+        size_t parsedChars = 0;
+        itemPrice = stof(priceInput, &parsedChars);
+        if (parsedChars != priceInput.size())       // Trailing junk after the number, e.g. "12.5abc"
+            throw invalid_argument("trailing characters after number");
+        if (itemPrice < 0) {                         // Reject negative price
+            cout << "Invalid price. Must be a positive number." << endl;
+            return;
+        }
+    } catch (...) {                                  // Catches stof parse failure or the throw above
         cout << "Invalid price. Must be a positive number." << endl;
         return;
     }
 
+    // Same decimal/garbage-safe approach for stock quantity
     cout << "Enter Stock Quantity: ";
-    if (!(cin >> itemStock) || itemStock < 0) {     // Reject non-numeric or negative stock
-        cin.clear();
-        cin.ignore(1000, '\n');
+    string stockInput;
+    getline(cin, stockInput);
+    try {
+        size_t parsedChars = 0;
+        itemStock = stoi(stockInput, &parsedChars);
+        if (parsedChars != stockInput.size())
+            throw invalid_argument("trailing characters after number");
+        if (itemStock < 0) {                          // Reject negative stock
+            cout << "Invalid stock. Must be a positive whole number." << endl;
+            return;
+        }
+    } catch (...) {
         cout << "Invalid stock. Must be a positive whole number." << endl;
         return;
     }
@@ -224,6 +249,8 @@ void addProduct(Products** PRODUCTS_LIST){
     } else {    // Products list have content
         Products* tail = (*PRODUCTS_LIST)->prevItem;    // Get the current tail node
         newProduct->itemIndex = tail->itemIndex + 1;    // Assign the next available index.
+        // NOTE: indices are never reused/compacted after deletion — intentional, keeps
+        // product IDs stable across the product's lifetime instead of shifting around.
 
         // Insert the new node after the tail
         tail->nextItem              = newProduct;
@@ -276,7 +303,10 @@ void updateProduct(Products** PRODUCTS_LIST) {
             getline(cin, priceInput);
             if (!priceInput.empty()) {
                 try {
-                    float newPrice = stof(priceInput);
+                    size_t parsedChars = 0;
+                    float newPrice = stof(priceInput, &parsedChars);
+                    if (parsedChars != priceInput.size())
+                        throw invalid_argument("trailing characters after number");
                     if (newPrice < 0) {         // Reject negative price
                         cout << "Invalid price. Keeping current value." << endl;
                     } else {
@@ -292,7 +322,10 @@ void updateProduct(Products** PRODUCTS_LIST) {
             getline(cin, stockInput);
             if (!stockInput.empty()) {
                 try {
-                    int newStock = stoi(stockInput);
+                    size_t parsedChars = 0;
+                    int newStock = stoi(stockInput, &parsedChars);
+                    if (parsedChars != stockInput.size())
+                        throw invalid_argument("trailing characters after number");
                     if (newStock < 0) {         // Reject negative stock
                         cout << "Invalid stock. Keeping current value." << endl;
                     } else {
@@ -380,7 +413,12 @@ void displayProductsDetails(Products* PRODUCTS_LIST) {
              << current->itemBrand << " | "
              << current->itemType  << " | P"
              << current->itemPrice << " | "
-             << current->itemStock << endl;
+             << current->itemStock;
+
+        if (current->itemStock == 0)        // Flag out-of-stock items inline
+            cout << " (OUT OF STOCK)";
+        cout << endl;
+
         current = current->nextItem;
     } while (current != PRODUCTS_LIST);
     cout << "--------------------------------------------------" << endl;

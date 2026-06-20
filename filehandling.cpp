@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <ctime>
 using namespace std;
 
 // ########## FILE I/O ##########
@@ -73,24 +74,34 @@ void saveData(Products* PRODUCTS_LIST) {
 }
 
 
-void saveReceipt(Orders* ORDERS_LIST, string customerName, float total) {
+void saveReceipt(string customerName, string itemName, int quantity, float total) {
     ofstream file("receipt.txt");
     if (!file.is_open()) return;
 
     file << "----------- BEAUTEQ TRANSACTION RECEIPT ----------\n";
     file << "Customer: " << customerName << "\n";
     file << "--------------------------------------------------\n";
-
-    Orders* current = ORDERS_LIST;                                  // Contains all the orders list: to be changed later. Just the selected ones should do
-    do {
-        file << current->itemName << " x" << current->orderAmount
-             << " — P" << current->totalPrice << "\n";
-        current = current->nextOrder;
-    } while (current != ORDERS_LIST);
-
+    file << itemName << " x" << quantity << " — P" << total << "\n";
     file << "--------------------------------------------------\n";
     file << "Total Paid: P" << total << "\n";
     file << "-------- THANK YOU FOR SHOPPING AT BEAUTEQ --------\n";
 
     file.close();
-}   
+}
+
+void appendTransaction(string customerName, string itemName, int quantity, float total) {
+    ofstream file("transactions.txt", ios::app);   // ios::app: always appends, never overwrites previous history
+    if (!file.is_open()) return;
+
+    time_t now = time(nullptr);
+    char timestamp[20];
+    strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M", localtime(&now));
+
+    file << "==================================================\n";
+    file << "Date: "     << timestamp     << "\n";
+    file << "Customer: " << customerName  << "\n";
+    file << "Item: "     << itemName << " x" << quantity << "\n";
+    file << "Total Paid: P" << total << "\n";
+
+    file.close();
+}

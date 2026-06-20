@@ -2,6 +2,7 @@
 #include "filehandling.h"
 
 #include <iostream>
+#include <fstream>
 using namespace std;
 
 // ########## ORDER MANAGEMENT ##########
@@ -12,12 +13,11 @@ int ManageOrders(Products** PRODUCTS_LIST, Orders** ORDERS_LIST) {
     // Loop replaces recursion, preventing stack overflow on long sessions
     while (true) {
         cout << "\n########## Order Management ##########" << endl;
-        cout << "1. Show Customer Orders"        << endl;
-        cout << "2. Validate Stock Availability" << endl;
-        cout << "3. Add Item to Cart"            << endl;
-        cout << "4. View Cart & Checkout"        << endl;
-        cout << "5. Display Order Details"       << endl;
-        cout << "6. Back to Main Menu"           << endl;
+        cout << "1. Validate Stock Availability" << endl;
+        cout << "2. Place Order"                 << endl;
+        cout << "3. Display Order Details"       << endl;
+        cout << "4. Transaction History"         << endl;
+        cout << "5. Back to Main Menu"           << endl;
         cout << "Enter your choice: ";
 
         if (!(cin >> orderChoice)) {    // Handle non-integer input
@@ -28,33 +28,14 @@ int ManageOrders(Products** PRODUCTS_LIST, Orders** ORDERS_LIST) {
         }
 
         switch (orderChoice) {
-            case 1: showCustomerOrders(*ORDERS_LIST);                break;
-            case 2: validateStockAvailability(*PRODUCTS_LIST);       break;
-            case 3: addToCart(PRODUCTS_LIST, ORDERS_LIST);           break;
-            case 4: viewAndCheckout(PRODUCTS_LIST, ORDERS_LIST);     break;
-            case 5: displayOrderDetails(*ORDERS_LIST);               break;
-            case 6: return 0;
-            default: cout << "Invalid choice. Please enter 1 - 6." << endl; break;
+            case 1: validateStockAvailability(*PRODUCTS_LIST);    break;
+            case 2: placeOrder(PRODUCTS_LIST, ORDERS_LIST);       break;
+            case 3: displayOrderDetails(*ORDERS_LIST);            break;
+            case 4: showTransactionHistory();                     break;
+            case 5: return 0;
+            default: cout << "Invalid choice. Please enter 1 - 5." << endl; break;
         }
     }
-}
-
-void showCustomerOrders(Orders* ORDERS_LIST) {
-    if (ORDERS_LIST == nullptr) {       // Check if there are no orders in the list
-        cout << "No orders yet." << endl;
-        return;
-    }
-
-    Orders* current = ORDERS_LIST;
-    do {
-        cout << "--------------------------------------------------" << endl;
-        cout << "Customer: " << current->customerName << endl;
-        cout << "Item: "     << current->itemName     << endl;
-        cout << "Quantity: " << current->orderAmount  << endl;
-        cout << "Total: P"   << current->totalPrice   << endl;
-        current = current->nextOrder;
-    } while (current != ORDERS_LIST);
-    cout << "--------------------------------------------------" << endl;
 }
 
 void validateStockAvailability(Products* PRODUCTS_LIST) {
@@ -97,15 +78,13 @@ void validateStockAvailability(Products* PRODUCTS_LIST) {
     cout << "Product ID not found." << endl;
 }
 
-void addToCart(Products** PRODUCTS_LIST, Orders** ORDERS_LIST) {
+void placeOrder(Products** PRODUCTS_LIST, Orders** ORDERS_LIST) {
     if (*PRODUCTS_LIST == nullptr) {    // Check if there are no products in the list
         cout << "No products available." << endl;
         return;
     }
 
-    int targetId, quantity;
     string customerName;
-
     cout << "Enter Customer Name: ";
     cin.ignore();
     getline(cin, customerName);
@@ -113,6 +92,8 @@ void addToCart(Products** PRODUCTS_LIST, Orders** ORDERS_LIST) {
         cout << "Customer name cannot be empty." << endl;
         return;
     }
+
+    int targetId, quantity;
 
     cout << "Enter Product ID: ";
     if (!(cin >> targetId) || targetId <= 0) {  // Reject non-integer or non-positive ID
@@ -133,16 +114,38 @@ void addToCart(Products** PRODUCTS_LIST, Orders** ORDERS_LIST) {
     Products* current = *PRODUCTS_LIST;
     do {
         if (current->itemIndex == targetId) {   // The searched itemIndex is found
+
+            // Validate stock availability before confirming the order
             if (quantity > current->itemStock) {
                 cout << "Insufficient stock. Available: " << current->itemStock << endl;
                 return;
             }
 
-            Orders* newOrder       = new Orders();  // Creates new node pointer instance
+            float total = current->itemPrice * quantity;
+
+            cout << "\n########## Order Summary ##########" << endl;
+            cout << "Customer: " << customerName  << endl;
+            cout << "Item    : " << current->itemName << " x" << quantity << endl;
+            cout << "Total   : P" << total << endl;
+            cout << "Confirm order? (Y/N): ";
+
+            char confirm;
+            cin >> confirm;
+            if (confirm != 'Y' && confirm != 'y') {     // Order cancelled, nothing is deducted or saved
+                cout << "Order cancelled." << endl;
+                return;
+            }
+
+            // Automatically deduct inventory quantity after a successful order
+            current->itemStock -= quantity;
+            saveData(*PRODUCTS_LIST);
+
+            // Record the completed order as a new node in ORDERS_LIST (order history for this session)
+            Orders* newOrder       = new Orders();
             newOrder->customerName = customerName;
             newOrder->itemName     = current->itemName;
             newOrder->orderAmount  = quantity;
-            newOrder->totalPrice   = current->itemPrice * quantity;
+            newOrder->totalPrice   = total;
             newOrder->nextOrder    = nullptr;
             newOrder->prevOrder    = nullptr;
 
@@ -159,7 +162,11 @@ void addToCart(Products** PRODUCTS_LIST, Orders** ORDERS_LIST) {
                 (*ORDERS_LIST)->prevOrder = newOrder;   // Appends the order at the last
             }
 
-            cout << "Added to cart: " << current->itemName << " x" << quantity << " — P" << newOrder->totalPrice << endl;
+            // Generate transaction summary / receipt for this order
+            saveReceipt(customerName, current->itemName, quantity, total);
+            appendTransaction(customerName, current->itemName, quantity, total);
+
+            cout << "Order placed successfully. Receipt saved to receipt.txt" << endl;
             return;
         }
         current = current->nextItem;
@@ -168,71 +175,13 @@ void addToCart(Products** PRODUCTS_LIST, Orders** ORDERS_LIST) {
     cout << "Product ID not found." << endl;
 }
 
-void viewAndCheckout(Products** PRODUCTS_LIST, Orders** ORDERS_LIST) {
-    if (*ORDERS_LIST == nullptr) {      // Check if the order list is empty
-        cout << "Cart is empty." << endl;
-        return;
-    }
-
-    float grandTotal = 0;
-    string customerName;
-
-    cout << "\n########## Cart Summary ##########" << endl;
-    Orders* current = *ORDERS_LIST;
-    do {
-        // Prints: itemName x orderAmount — P(totalPrice)
-        cout << current->itemName << " x" << current->orderAmount << " — P" << current->totalPrice << endl;
-        grandTotal  += current->totalPrice; // Add totalPrices per item to the grandTotal
-        customerName = current->customerName;
-        current = current->nextOrder;
-    } while (current != *ORDERS_LIST);
-
-    cout << "Grand Total: P" << grandTotal << endl;
-    cout << "Confirm purchase? (Y/N): ";
-    char confirm;
-    cin >> confirm;
-
-    if (confirm != 'Y' && confirm != 'y') {     // Cancels checkout
-        cout << "Checkout cancelled." << endl;
-        return;
-    }
-
-    // Deduct stock for each ordered item
-    current = *ORDERS_LIST;
-    do {                                        // Subtracts ordered amount if everything goes through
-        Products* prod = *PRODUCTS_LIST;
-        do {
-            if (prod->itemName == current->itemName) {
-                prod->itemStock -= current->orderAmount;
-                break;
-            }
-            prod = prod->nextItem;
-        } while (prod != *PRODUCTS_LIST);       // Iterates through the PRODUCTS_LIST to reduce itemStock
-        current = current->nextOrder;
-    } while (current != *ORDERS_LIST);          // Iterates through the ORDERS_LIST to determine orderAmount to subtract
-
-    saveReceipt(*ORDERS_LIST, customerName, grandTotal);
-    saveData(*PRODUCTS_LIST);
-
-    // Free all order nodes and clear the list
-    Orders* toDelete = *ORDERS_LIST;
-    do {
-        Orders* next = toDelete->nextOrder;
-        delete toDelete;
-        toDelete = next;
-    } while (toDelete != *ORDERS_LIST);         // Iterates through the ORDERS_LIST and frees the dynamic memory
-    *ORDERS_LIST = nullptr;
-
-    cout << "Order complete. Receipt saved to receipt.txt" << endl;
-}
-
 void displayOrderDetails(Orders* ORDERS_LIST) {
     if (ORDERS_LIST == nullptr) {
-        cout << "No orders to display." << endl;
+        cout << "No orders placed this session." << endl;
         return;
     }
 
-    cout << "\n########## Order Details ##########" << endl;
+    cout << "\n########## Order Details (This Session) ##########" << endl;
     cout << "--------------------------------------------------" << endl;
 
     float runningTotal = 0;
@@ -248,4 +197,25 @@ void displayOrderDetails(Orders* ORDERS_LIST) {
     } while (current != ORDERS_LIST);
 
     cout << "Grand Total: P" << runningTotal << endl;
+}
+
+void showTransactionHistory() {
+    ifstream file("transactions.txt");
+    if (!file.is_open()) {
+        cout << "No transaction history yet." << endl;
+        return;
+    }
+
+    cout << "\n########## Transaction History (All Time) ##########" << endl;
+
+    string line;
+    bool hasContent = false;
+    while (getline(file, line)) {
+        cout << line << endl;
+        hasContent = true;
+    }
+    file.close();
+
+    if (!hasContent)
+        cout << "No transaction history yet." << endl;
 }
