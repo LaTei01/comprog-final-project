@@ -14,7 +14,7 @@ int MainMenu() {
     cout << "1. Manage Inventory" << endl;
     cout << "2. Manage Orders"    << endl;
     cout << "3. Exit"             << endl;
-    cout << "Enter your choice: ";
+    cout << "\nEnter your choice: ";
     cin >> choice;
     return choice;
 }

@@ -12,31 +12,38 @@ static const int LOW_STOCK_THRESHOLD = 5;
 int ManageInventory(Products** PRODUCTS_LIST) {
     int inventoryChoice;
 
-    cout << "\n########## Inventory Management ##########" << endl;
-    cout << "1. Search Product"              << endl;
-    cout << "2. Add Product"                 << endl;
-    cout << "3. Update Product"              << endl;
-    cout << "4. Delete Product"              << endl;
-    cout << "5. Display All Product Details" << endl;
-    cout << "6. Display In-Store Inventory"  << endl;
-    cout << "7. Check Low Stock"             << endl;
-    cout << "8. Back to Main Menu"           << endl;
-    cout << "Enter your choice: ";
-    cin >> inventoryChoice;
+    // Loop replaces recursion, prevents stack overflow on long sessions
+    while (true) {
+        cout << "\n########## Inventory Management ##########" << endl;
+        cout << "1. Search Product"              << endl;
+        cout << "2. Add Product"                 << endl;
+        cout << "3. Update Product"              << endl;
+        cout << "4. Delete Product"              << endl;
+        cout << "5. Display All Product Details" << endl;
+        cout << "6. Display In-Store Inventory"  << endl;
+        cout << "7. Check Low Stock"             << endl;
+        cout << "8. Back to Main Menu"           << endl;
+        cout << "\nEnter your choice: ";
 
-    switch (inventoryChoice) {
-        case 1: searchProduct(PRODUCTS_LIST);            break;
-        case 2: addProduct(PRODUCTS_LIST);               break;
-        case 3: updateProduct(PRODUCTS_LIST);            break;
-        case 4: deleteProduct(PRODUCTS_LIST);            break;
-        case 5: displayProductsDetails(*PRODUCTS_LIST);  break;
-        case 6: displayInventory(*PRODUCTS_LIST);        break;
-        case 7: checkLowStock(*PRODUCTS_LIST);           break;
-        case 8: return 0;
-        default: cout << "Invalid choice. Please try again." << endl; break;
+        if (!(cin >> inventoryChoice)) {    // Handle non-integer input
+            cin.clear();
+            cin.ignore(1000, '\n');
+            cout << "Invalid input. Please enter a number." << endl;
+            continue;
+        }
+
+        switch (inventoryChoice) {
+            case 1: searchProduct(PRODUCTS_LIST);            break;
+            case 2: addProduct(PRODUCTS_LIST);               break;
+            case 3: updateProduct(PRODUCTS_LIST);            break;
+            case 4: deleteProduct(PRODUCTS_LIST);            break;
+            case 5: displayProductsDetails(*PRODUCTS_LIST);  break;
+            case 6: displayInventory(*PRODUCTS_LIST);        break;
+            case 7: checkLowStock(*PRODUCTS_LIST);           break;
+            case 8: return 0;
+            default: cout << "Invalid choice. Please enter 1 - 8." << endl; break;
+        }
     }
-
-    return ManageInventory(PRODUCTS_LIST);  // Loop until user goes back
 }
 
 void searchProduct(Products** PRODUCTS_LIST){
@@ -50,12 +57,16 @@ void searchProduct(Products** PRODUCTS_LIST){
     cin.ignore();                       // Clear any leftover newline character from previous input operations
     getline(cin, searchKeyword);        // Read the entire search query, including spaces
 
-    
-    string lowerKeyword = searchKeyword;    
+    if (searchKeyword.empty()) {        // Reject empty search queries
+        cout << "Search keyword cannot be empty." << endl;
+        return;
+    }
+
+    string lowerKeyword = searchKeyword;
     // Create a lowercase copy of the search keyword
     transform(lowerKeyword.begin(), lowerKeyword.end(), lowerKeyword.begin(), ::tolower);
 
-    cout << "\nResults for [" << searchKeyword << "]:" << endl; 
+    cout << "\nResults for [" << searchKeyword << "]:" << endl;
     cout << "--------------------------------------------------" << endl;
 
     bool found = false;    // Flag to track whether at least one matching product is found
@@ -79,10 +90,10 @@ void searchProduct(Products** PRODUCTS_LIST){
             tempType.find(lowerKeyword)  != string::npos) {
 
             // Display matching product information
-            cout << "ID: "    << current->itemIndex
-                 << " | "     << current->itemName
-                 << " ("      << current->itemBrand << ")"
-                 << " | P"    << current->itemPrice
+            cout << "ID: "       << current->itemIndex
+                 << " | "        << current->itemName
+                 << " ("         << current->itemBrand << ")"
+                 << " | P"       << current->itemPrice
                  << " | Stock: " << current->itemStock << endl;
 
             // Mark that at least one product has been found
@@ -105,36 +116,44 @@ void addProduct(Products** PRODUCTS_LIST){
     cin.ignore();
     getline(cin, itemName);    // Read the full product name, including spaces
 
+    if (itemName.empty()) {             // Reject empty product name
+        cout << "Product name cannot be empty." << endl;
+        return;
+    }
+
     if (*PRODUCTS_LIST != nullptr) {     // Check for duplicate product names if the list is not empty
-
-
         Products* current = *PRODUCTS_LIST;
 
         do {
             // Creates temporary copies for case-insensitive comparison
-            string tempName = current->itemName;
+            string tempName  = current->itemName;
             string tempInput = itemName;
 
             // Converts both strings to lowercase
             transform(tempName.begin(),  tempName.end(),  tempName.begin(),  ::tolower);
             transform(tempInput.begin(), tempInput.end(), tempInput.begin(), ::tolower);
 
-            if (tempName == tempInput) {// Duplicate found
+            if (tempName == tempInput) { // Duplicate found
 
                 // Display warning and show available actions
                 cout << "WARNING: \"" << itemName << "\" already exists." << endl;
-                cout << "1. Enter a different name" << endl;
-                cout << "2. Go to Update Product instead" << endl;
+                cout << "1. Enter a different name"        << endl;
+                cout << "2. Go to Update Product instead"  << endl;
                 cout << "Enter your choice: ";
 
                 int dupChoice;
-                cin >> dupChoice;
+                if (!(cin >> dupChoice)) {  // Handle non-integer input
+                    cin.clear();
+                    cin.ignore(1000, '\n');
+                    cout << "Invalid input. Returning to menu." << endl;
+                    return;
+                }
 
                 if (dupChoice == 2) {           // Redirect user to update the existing product
                     updateProduct(PRODUCTS_LIST);
                     return;
                 } else {
-                    addProduct(PRODUCTS_LIST);  // Restart the add product process 
+                    addProduct(PRODUCTS_LIST);  // Restart the add product process
                     return;
                 }
             }
@@ -145,21 +164,39 @@ void addProduct(Products** PRODUCTS_LIST){
     }
 
     string itemBrand, itemType;
-    float itemPrice;
-    int itemStock;
+    float  itemPrice;
+    int    itemStock;
 
     cout << "Enter Brand: ";
     cin.ignore();
     getline(cin, itemBrand);
+    if (itemBrand.empty()) {            // Reject empty brand
+        cout << "Brand cannot be empty." << endl;
+        return;
+    }
 
     cout << "Enter Type (Lip Product / Eye Product / Skin Product / Others): ";
     getline(cin, itemType);
+    if (itemType.empty()) {             // Reject empty type
+        cout << "Type cannot be empty." << endl;
+        return;
+    }
 
     cout << "Enter Price: ";
-    cin >> itemPrice;
+    if (!(cin >> itemPrice) || itemPrice < 0) {     // Reject non-numeric or negative price
+        cin.clear();
+        cin.ignore(1000, '\n');
+        cout << "Invalid price. Must be a positive number." << endl;
+        return;
+    }
 
     cout << "Enter Stock Quantity: ";
-    cin >> itemStock;
+    if (!(cin >> itemStock) || itemStock < 0) {     // Reject non-numeric or negative stock
+        cin.clear();
+        cin.ignore(1000, '\n');
+        cout << "Invalid stock. Must be a positive whole number." << endl;
+        return;
+    }
 
     Products* newProduct = new Products(); // Create new node pointer
 
@@ -184,7 +221,6 @@ void addProduct(Products** PRODUCTS_LIST){
 
         *PRODUCTS_LIST = newProduct;         // Make the new node the head of the list
 
-
     } else {    // Products list have content
         Products* tail = (*PRODUCTS_LIST)->prevItem;    // Get the current tail node
         newProduct->itemIndex = tail->itemIndex + 1;    // Assign the next available index.
@@ -196,7 +232,7 @@ void addProduct(Products** PRODUCTS_LIST){
         (*PRODUCTS_LIST)->prevItem  = newProduct;
     }
 
-    saveData(*PRODUCTS_LIST); // uncomment later once saveData is complete
+    saveData(*PRODUCTS_LIST);
     cout << "Product added successfully." << endl;
 }
 
@@ -209,14 +245,19 @@ void updateProduct(Products** PRODUCTS_LIST) {
 
     int targetId;
     cout << "Enter Product ID to update: ";
-    cin >> targetId;
+    if (!(cin >> targetId) || targetId <= 0) {  // Reject non-integer or non-positive ID
+        cin.clear();
+        cin.ignore(1000, '\n');
+        cout << "Invalid ID. Must be a positive whole number." << endl;
+        return;
+    }
 
     Products* current = *PRODUCTS_LIST;
     do {
         if (current->itemIndex == targetId) {   // Product to be updated is found
             string newName, newBrand, newType;
 
-            // Asks for the fields to be updated and reassign
+            // Asks for the fields to be updated — press Enter to keep current value
             cin.ignore();
             cout << "Current Name  [" << current->itemName  << "]: ";
             getline(cin, newName);
@@ -233,14 +274,36 @@ void updateProduct(Products** PRODUCTS_LIST) {
             cout << "Current Price [" << current->itemPrice << "]: ";
             string priceInput;
             getline(cin, priceInput);
-            if (!priceInput.empty()) current->itemPrice = stof(priceInput);
+            if (!priceInput.empty()) {
+                try {
+                    float newPrice = stof(priceInput);
+                    if (newPrice < 0) {         // Reject negative price
+                        cout << "Invalid price. Keeping current value." << endl;
+                    } else {
+                        current->itemPrice = newPrice;
+                    }
+                } catch (...) {                 // Catch stof parse failure
+                    cout << "Invalid price format. Keeping current value." << endl;
+                }
+            }
 
             cout << "Current Stock [" << current->itemStock << "]: ";
             string stockInput;
             getline(cin, stockInput);
-            if (!stockInput.empty()) current->itemStock = stoi(stockInput);
+            if (!stockInput.empty()) {
+                try {
+                    int newStock = stoi(stockInput);
+                    if (newStock < 0) {         // Reject negative stock
+                        cout << "Invalid stock. Keeping current value." << endl;
+                    } else {
+                        current->itemStock = newStock;
+                    }
+                } catch (...) {                 // Catch stoi parse failure
+                    cout << "Invalid stock format. Keeping current value." << endl;
+                }
+            }
 
-            saveData(*PRODUCTS_LIST);   // uncomment when saveData is completed
+            saveData(*PRODUCTS_LIST);
             cout << "Product updated successfully." << endl;
             return;
         }
@@ -259,7 +322,12 @@ void deleteProduct(Products** PRODUCTS_LIST) {
 
     int targetId;
     cout << "Enter Product ID to delete: ";
-    cin >> targetId;
+    if (!(cin >> targetId) || targetId <= 0) {  // Reject non-integer or non-positive ID
+        cin.clear();
+        cin.ignore(1000, '\n');
+        cout << "Invalid ID. Must be a positive whole number." << endl;
+        return;
+    }
 
     Products* current = *PRODUCTS_LIST;
     do {
@@ -283,8 +351,8 @@ void deleteProduct(Products** PRODUCTS_LIST) {
                     *PRODUCTS_LIST = current->nextItem;
             }
 
-            delete current;             // free to be deleted node
-            saveData(*PRODUCTS_LIST);   //  uncomment once saveData is complete
+            delete current;             // Free the deleted node
+            saveData(*PRODUCTS_LIST);
             cout << "Product deleted successfully." << endl;
             return;
         }
@@ -344,10 +412,10 @@ void checkLowStock(Products* PRODUCTS_LIST) {
         cout << "No products to check." << endl;
         return;
     }
- 
+
     cout << "\n########## Low Stock Alert (<=5) ##########" << endl;
     cout << "--------------------------------------------------" << endl;
- 
+
     bool found = false;
     Products* current = PRODUCTS_LIST;
     do {
@@ -359,7 +427,7 @@ void checkLowStock(Products* PRODUCTS_LIST) {
         }
         current = current->nextItem;
     } while (current != PRODUCTS_LIST);
- 
+
     if (!found)
         cout << "All products are sufficiently stocked." << endl;
     cout << "--------------------------------------------------" << endl;
