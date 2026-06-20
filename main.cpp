@@ -71,6 +71,18 @@ int main(){
                 break;
             default:
                 cout << "Invalid choice. Please try again." << endl;
+        }
+        choice = MainMenu();
+    while (choice != 3) {
+        switch (choice) {
+            case 1:
+                ManageInventory(&PRODUCTS_LIST);
+                break;
+            case 2:
+                ManageOrders(&PRODUCTS_LIST, &ORDERS_LIST);
+                break;
+            default:
+                cout << "Invalid choice. Please try again." << endl;
                 break;
         }
         choice = MainMenu();
