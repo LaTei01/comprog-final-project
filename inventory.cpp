@@ -338,3 +338,29 @@ void displayInventory(Products* PRODUCTS_LIST) {
         } while (current != PRODUCTS_LIST);
     }
 }
+
+void checkLowStock(Products* PRODUCTS_LIST) {
+    if (PRODUCTS_LIST == nullptr) {         // Checks if there are no products in the list
+        cout << "No products to check." << endl;
+        return;
+    }
+ 
+    cout << "\n########## Low Stock Alert (<=5) ##########" << endl;
+    cout << "--------------------------------------------------" << endl;
+ 
+    bool found = false;
+    Products* current = PRODUCTS_LIST;
+    do {
+        if (current->itemStock <= LOW_STOCK_THRESHOLD) {
+            cout << "ID: "       << current->itemIndex
+                 << " | "        << current->itemName
+                 << " | Stock: " << current->itemStock << endl;
+            found = true;
+        }
+        current = current->nextItem;
+    } while (current != PRODUCTS_LIST);
+ 
+    if (!found)
+        cout << "All products are sufficiently stocked." << endl;
+    cout << "--------------------------------------------------" << endl;
+}
