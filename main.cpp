@@ -58,7 +58,7 @@ int main(){
     Orders* ORDERS_LIST = nullptr;
     int choice;
 
-    // loadData(&PRODUCTS_LIST);
+    loadData(&PRODUCTS_LIST);
     choice = MainMenu();
 
     while (choice != 3) {
@@ -75,7 +75,7 @@ int main(){
         choice = MainMenu();
     }
 
-    // saveData(PRODUCTS_LIST);
+    saveData(PRODUCTS_LIST);
     cout << "Exiting the program. Goodbye!" << endl;
     return 0;
 }
@@ -297,7 +297,7 @@ void addProduct(Products** PRODUCTS_LIST){
         (*PRODUCTS_LIST)->prevItem  = newProduct;
     }
 
-    // saveData(*PRODUCTS_LIST); // uncomment later once saveData is complete
+    saveData(*PRODUCTS_LIST); // uncomment later once saveData is complete
     cout << "Product added successfully." << endl;
 }
 
@@ -341,7 +341,7 @@ void updateProduct(Products** PRODUCTS_LIST) {
             getline(cin, stockInput);
             if (!stockInput.empty()) current->itemStock = stoi(stockInput);
 
-            // saveData(*PRODUCTS_LIST);   // uncomment when saveData is completed
+            saveData(*PRODUCTS_LIST);   // uncomment when saveData is completed
             cout << "Product updated successfully." << endl;
             return;
         }
@@ -385,7 +385,7 @@ void deleteProduct(Products** PRODUCTS_LIST) {
             }
 
             delete current;             // free to be deleted node
-            // saveData(*PRODUCTS_LIST);   //  uncomment once saveData is complete
+            saveData(*PRODUCTS_LIST);   //  uncomment once saveData is complete
             cout << "Product deleted successfully." << endl;
             return;
         }
@@ -521,60 +521,6 @@ void validateStockAvailability(Products* PRODUCTS_LIST) {
         }
         current = current->nextItem;
     } while (current != PRODUCTS_LIST);
-
-    cout << "Product ID not found." << endl;
-}
-
-void addToCart(Products** PRODUCTS_LIST, Orders** ORDERS_LIST) {
-    if (*PRODUCTS_LIST == nullptr) {
-        cout << "No products available." << endl;
-        return;
-    }
-
-    int targetId, quantity;
-    string customerName;
-
-    cout << "Enter Customer Name: ";
-    cin.ignore();
-    getline(cin, customerName);
-    cout << "Enter Product ID: ";
-    cin >> targetId;
-    cout << "Enter Quantity: ";
-    cin >> quantity;
-
-    Products* current = *PRODUCTS_LIST;
-    do {
-        if (current->itemIndex == targetId) {
-            if (quantity > current->itemStock) {
-                cout << "Insufficient stock. Available: " << current->itemStock << endl;
-                return;
-            }
-
-            Orders* newOrder = new Orders();
-            newOrder->customerName = customerName;
-            newOrder->itemName     = current->itemName;
-            newOrder->orderAmount  = quantity;
-            newOrder->totalPrice   = current->itemPrice * quantity;
-            newOrder->nextOrder    = nullptr;
-            newOrder->prevOrder    = nullptr;
-
-            if (*ORDERS_LIST == nullptr) {
-                newOrder->nextOrder = newOrder;
-                newOrder->prevOrder = newOrder;
-                *ORDERS_LIST = newOrder;
-            } else {
-                Orders* tail = (*ORDERS_LIST)->prevOrder;
-                tail->nextOrder             = newOrder;
-                newOrder->prevOrder         = tail;
-                newOrder->nextOrder         = *ORDERS_LIST;
-                (*ORDERS_LIST)->prevOrder   = newOrder;
-            }
-
-            cout << "Added to cart: " << current->itemName << " x" << quantity << " — P" << newOrder->totalPrice << endl;
-            return;
-        }
-        current = current->nextItem;
-    } while (current != *PRODUCTS_LIST);
 
     cout << "Product ID not found." << endl;
 }
@@ -784,8 +730,4 @@ void saveReceipt(Orders* ORDERS_LIST, string customerName, float total) {
     file << "-------- THANK YOU FOR SHOPPING AT BEAUTEQ --------\n";
 
     file.close();
-}
-
-
-
-
+}   
