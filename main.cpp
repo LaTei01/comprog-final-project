@@ -87,12 +87,13 @@ int main(){
         }
         choice = MainMenu();
     }
+    
 
     saveData(PRODUCTS_LIST);
     cout << "Exiting the program. Goodbye!" << endl;
     return 0;
+    }
 }
-
 
 int MainMenu(){
     int choice;
